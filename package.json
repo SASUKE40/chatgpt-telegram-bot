@@ -54,6 +54,7 @@
     "lodash": "^4.17.21",
     "node-fetch": "^3.3.0",
     "node-telegram-bot-api": "^0.60.0",
+    "openai": "^3.2.1",
     "promise-queue": "^2.2.5",
     "telegramify-markdown": "^1.0.6"
   },

@@ -1,6 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import {ChatGPT} from './api';
 import {MessageHandler} from './handlers/message';
+import {OpenAI} from './openai';
 import {loadConfig} from './utils';
 
 async function main() {
@@ -10,13 +11,23 @@ async function main() {
   const api = new ChatGPT(opts.api);
   await api.init();
 
+  // Initialize OpenAI API.
+  const openai = new OpenAI(opts.api);
+  await openai.init();
+
   // Initialize Telegram Bot and message handler.
   const bot = new TelegramBot(opts.bot.token, {
     polling: true,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     request: {proxy: opts.proxy} as any,
   });
-  const messageHandler = new MessageHandler(bot, api, opts.bot, opts.debug);
+  const messageHandler = new MessageHandler(
+    bot,
+    api,
+    openai,
+    opts.bot,
+    opts.debug
+  );
   await messageHandler.init();
 
   bot.on('message', messageHandler.handle);

@@ -1,10 +1,12 @@
 import type TelegramBot from 'node-telegram-bot-api';
 import type {ChatGPT} from '../api';
+import {OpenAI} from '../openai';
 import {BotOptions} from '../types';
 import {logWithTime} from '../utils';
 import {Authenticator} from './authentication';
 import {ChatHandler} from './chat';
 import {CommandHandler} from './command';
+import {ImageHandler} from './image';
 
 class MessageHandler {
   debug: number;
@@ -15,8 +17,15 @@ class MessageHandler {
   protected _authenticator: Authenticator;
   protected _commandHandler: CommandHandler;
   protected _chatHandler: ChatHandler;
+  protected _imageHandler: ImageHandler;
 
-  constructor(bot: TelegramBot, api: ChatGPT, botOpts: BotOptions, debug = 1) {
+  constructor(
+    bot: TelegramBot,
+    api: ChatGPT,
+    openai: OpenAI,
+    botOpts: BotOptions,
+    debug = 1
+  ) {
     this.debug = debug;
     this._bot = bot;
     this._api = api;
@@ -24,6 +33,7 @@ class MessageHandler {
     this._authenticator = new Authenticator(bot, botOpts, debug);
     this._commandHandler = new CommandHandler(bot, api, botOpts, debug);
     this._chatHandler = new ChatHandler(bot, api, botOpts, debug);
+    this._imageHandler = new ImageHandler(bot, openai, botOpts, debug);
   }
 
   init = async () => {
@@ -39,14 +49,18 @@ class MessageHandler {
 
     // Parse message.
     const {text, command, isMentioned} = this._parseMessage(msg);
-    if (command != '' && command != this._opts.chatCmd) {
-      // For commands except `${chatCmd}`, pass the request to commandHandler.
-      await this._commandHandler.handle(
-        msg,
-        command,
-        isMentioned,
-        this._botUsername
-      );
+    if (command != '') {
+      if (command === '/genimg') {
+        await this._imageHandler.handle(msg, text);
+      } else {
+        // For commands except `${chatCmd}`, pass the request to commandHandler.
+        await this._commandHandler.handle(
+          msg,
+          command,
+          isMentioned,
+          this._botUsername
+        );
+      }
     } else {
       // Handles:
       // - direct messages in private chats
